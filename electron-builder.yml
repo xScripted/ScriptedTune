@@ -1,4 +1,4 @@
 appId: com.example.ElectronAutoUpdate
 publish:
   provider: github
-  token: [YOUR GITHUB ACCESS TOKEN]
+  token: [vscode://vscode.github-authentication/did-authenticate?windowid=1&code=0cdc7b30bc658d02f038&state=ee81e363-4396-4b3b-9cf5-d9d061415c66]

@@ -4,6 +4,9 @@
     <Playlist></Playlist>
     <Player></Player>
     <Help v-show="showHelp"></Help>
+    <div id="app-version">
+      v1.0
+    </div>
     <div id="helper" class="btn-hover" @click="showHelp = !showHelp">
       <i class="material-icons"> help_outline </i>
     </div>
@@ -53,7 +56,7 @@ export default ({
     grid-template-columns: 1fr;
     grid-template-rows: 1fr;
 
-    #configuration, #helper {
+    #configuration, #helper, #app-version {
       position: absolute;
       right: 5px;
       cursor: pointer;
@@ -68,6 +71,13 @@ export default ({
 
     #helper {
       right: 40px;
+    }
+
+    #app-version {
+      right: 80px;
+      top: 13px;
+      font-size: 10px;
+      color: rgb(182, 182, 182);
     }
 
     #settings, #playlist {
