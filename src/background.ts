@@ -5,11 +5,11 @@ import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer'
 const isDevelopment = process.env.NODE_ENV !== 'production'
 
-const { autoUpdater } = require('electron-updater');
-
 
 const Store = require('electron-store');
 const store = new Store();
+
+require('update-electron-app')()
 
 // Electron Store songs, tags, etc.
 
@@ -58,10 +58,6 @@ async function createWindow() {
     mainWin.loadURL('app://./index.html')
     mainWin.setMenuBarVisibility(false)
   }
-
-  mainWin.once('ready-to-show', () => {
-    autoUpdater.checkForUpdatesAndNotify();
-  });
 
   mainWin.on('closed', () => app.quit());
 }
