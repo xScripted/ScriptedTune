@@ -2,6 +2,11 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import './registerServiceWorker'
 import router from './router'
-import store from './store'
+import mitt from 'mitt'
+import 'materialize-css';
+import 'materialize-css/dist/css/materialize.min.css';
+import 'materialize-css/dist/js/materialize.min.js';
 
-createApp(App).use(store).use(router).mount('#app')
+const emitter = mitt();
+
+createApp(App).provide('emitter', emitter).use(router).mount('#app')

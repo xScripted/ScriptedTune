@@ -1,0 +1,80 @@
+/* -- Global Vars -- */
+
+$main-color: #ececec;
+$sencondary-color: rgba(0, 0, 0, 0.2);
+$helper-color: rgba(186, 255, 121, 0.904);
+$progress-bar-sound: rgba(0, 0, 0, 0.1);
+
+@import url('https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500&display=swap');
+
+// Media Queries
+@mixin tablet {
+    @media only screen and (min-width: 768px) {
+      @content;
+    }
+}
+  
+@mixin desktop {
+    @media only screen and (min-width: 992px) {
+      @content;
+    }
+}
+  
+@mixin large {
+    @media only screen and (min-width: 1200px) {
+      @content;
+    }
+}
+
+body * {
+    user-select: none;
+}
+
+.stm-active{
+    background-color: $sencondary-color;
+    border-radius: 100%;
+
+    &:hover{
+        background-color: $sencondary-color !important;  
+    }
+}
+
+.btn-hover {
+    transition: .3s;
+
+    &:hover{
+        transition: .3s;
+        background: rgb(218, 218, 218);
+        border-radius: 100%;
+    }
+}
+
+.tag {
+    transition: .2s;
+    cursor: pointer;
+    font-size: 15px;
+    border: 2px solid transparent;
+    box-shadow: 0px 0px 3px 1px lightgray;
+    border-radius: 5px;
+    padding: 2px 7px;
+    user-select: none;
+    height: 30px;
+    overflow: hidden;
+    white-space: nowrap;
+    font-weight: bold;
+
+    &:hover{
+        transition: .2s;
+        box-shadow: 0px 0px 5px 1px rgb(66, 66, 66);
+    }
+
+    &.tag-selected {
+        transition: .2s;
+        border: 2px dashed white;
+        box-shadow: 0px 0px 0px 2px black;
+    }
+}
+
+.emoji-picker__wrapper{
+    z-index: 1;
+}
