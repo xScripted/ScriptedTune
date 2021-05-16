@@ -5,7 +5,7 @@
     <Player></Player>
     <Help v-show="showHelp"></Help>
     <div id="app-version">
-      v1.0
+      v1.1
     </div>
     <div id="helper" class="btn-hover" @click="showHelp = !showHelp">
       <i class="material-icons"> help_outline </i>
