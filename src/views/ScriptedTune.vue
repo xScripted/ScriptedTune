@@ -3,9 +3,9 @@
     <Settings></Settings>
     <Playlist></Playlist>
     <Player></Player>
-    <Help v-show="showHelp"></Help>
+    <Help v-show="showHelp" @close="showHelp = false"></Help>
     <div id="app-version">
-      v1.1
+      v1.0
     </div>
     <div id="helper" class="btn-hover" @click="showHelp = !showHelp">
       <i class="material-icons"> help_outline </i>
@@ -19,11 +19,13 @@
 <script lang="ts">
 
 import { ipcRenderer } from 'electron';
-import { ref, provide } from 'vue';
+import { ref } from 'vue';
 import Playlist from '@/components/Playlist.vue'; // @ is an alias to /src
 import Player from '@/components/Player.vue'; // @ is an alias to /src
 import Settings from '@/components/Settings.vue'; // @ is an alias to /src
 import Help from '@/components/Help.vue'; // @ is an alias to /src
+import toDarkMode from '@/assets/js/darkmode.js';
+import Store from 'electron-store';
 
 export default ({
   components: {
@@ -36,14 +38,44 @@ export default ({
 
     const showHelp = ref(false);
 
-
     function openConfigurationWindow() {
       ipcRenderer.send('configurationIpc');
     }
 
+    const database: any = new Store();
+    var config = database.get('STMusicConfig');
+    if(config) config = JSON.parse(config);
+
+    let lang = ref(config.lang);
+    
+
+    ipcRenderer.on('changeLang', () => {
+
+      var config = database.get('STMusicConfig');
+      if(config) config = JSON.parse(config);
+      console.log(config.lang)
+      lang.value = config.lang;
+    })
+
     return {
-      openConfigurationWindow, showHelp
+      openConfigurationWindow, showHelp, lang
     }
+    
+
+  }, 
+  mounted() {
+
+    const database: any = new Store();
+    var config = database.get('STMusicConfig');
+    if(config) config = JSON.parse(config);
+
+    ipcRenderer.on('darkMode', () => {
+      var config = database.get('STMusicConfig');
+      if(config) config = JSON.parse(config);
+      toDarkMode(config.darkMode);
+    })
+
+    toDarkMode(config.darkMode);
 
   }
 });

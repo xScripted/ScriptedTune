@@ -2,9 +2,9 @@
   <div id="CoverCreator">
     <div class="nav-title valign-wrapper add-photo" > 
         <i class="material-icons"> add_a_photo </i> 
-        Subir nueva portada  
+        {{ $t('config.cover') }}  
     </div>
-    <input type="file" multiple="multiple" id="new-portada-file" accept="image/png, image/jpeg" @change="newPortada($event)">
+    <input type="file" multiple="multiple" id="new-portada-file" accept="image/png, image/jpeg, gif" @change="newPortada($event)">
 
     <div id="portadas-list">
         <div class="portada z-depth-1" :key="portada.id" v-for="portada of portadaList" 
@@ -81,6 +81,8 @@ export default ({
         margin-left: 5px;
         display: flex;
         flex-wrap: wrap;
+        height: 75vh;
+        overflow-y: scroll;
 
         .portada {
             position: relative;

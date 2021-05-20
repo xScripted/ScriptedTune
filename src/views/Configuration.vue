@@ -1,6 +1,6 @@
 <template>
   <div id="Configuration">
-    <div class="nav-title valign-wrapper"> <i class="material-icons"> settings </i> Configuration </div>
+    <div class="nav-title valign-wrapper"> <i class="material-icons"> settings </i> {{ $t('config.title') }} </div>
     <ConfigMenu></ConfigMenu>
     <ConfigStudio></ConfigStudio>
   </div>
@@ -10,21 +10,26 @@
 import { ipcRenderer } from 'electron';
 import ConfigMenu from '@/components/config/ConfigMenu.vue';
 import ConfigStudio from '@/components/config/ConfigStudio.vue';
+import toDarkMode from '@/assets/js/darkmode.js';
+import Store from 'electron-store';
 
 export default ({
   components: {
     ConfigMenu,
     ConfigStudio
   },
-  setup() {
+  mounted() {
 
-    ipcRenderer.on('tagxs', () => {
-      console.log('TAGS');
+    const database: any = new Store();
+    var config = JSON.parse(database.get('STMusicConfig'));
+
+    ipcRenderer.on('darkMode', () => {
+      config = JSON.parse(database.get('STMusicConfig'));
+      toDarkMode(config.darkMode);
     })
 
-    return {
+    toDarkMode(config.darkMode);
 
-    }
   }
 });
 </script>
@@ -54,7 +59,7 @@ export default ({
     height: 50px;
     padding-left: 20px;
     text-align: left;
-    background-color: $main-color;
+    background-color: #ececec;
     box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
   }
 

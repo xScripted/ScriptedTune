@@ -5,7 +5,7 @@
     <div id="new-tag">
 
       <div class="new-tag-title"> 
-        <h5> New Tag </h5>
+        <h5> Creador de Tags </h5>
         <div class="tag-preview">
           <div class="tag" :style="{ backgroundColor: newTag.bgColor.value, color: newTag.textColor.value }"> 
             {{ newTag.emoji.value + ' ' + newTag.name.value }}
@@ -14,17 +14,17 @@
       </div>
 
       <div class="tag-input-name">
-        <div class="label">Tag Name </div>
+        <div class="label"> {{ $t('config.tagcreator.name') }} </div>
         <input type="text" @input="newTag.name.value = $event.target.value">
       </div>
 
       <div class="select-tag-bg-color">
-        <div class="label"> Background </div>
+        <div class="label"> {{ $t('config.tagcreator.bgcolor') }}</div>
         <input type="color" :value="newTag.bgColor.value" @input="newTag.bgColor.value = $event.target.value"> 
       </div>
 
       <div class="select-tag-text-color">
-        <div class="label"> Text </div>
+        <div class="label"> {{ $t('config.tagcreator.color') }} </div>
         <input  type="color" :value="newTag.textColor.value" @input="newTag.textColor.value = $event.target.value"> 
       </div>
 
@@ -34,53 +34,55 @@
       </div>
 
       <div class="add-tag">
-        <div class="label"> Add Tag </div>
+        <div class="label"> {{ $t('config.tagcreator.addtag') }} </div>
         <button class=" waves-effect waves-light btn blue lighten-5" @click="addTag"> 
-          <i class="material-icons">call_made</i>
+          {{ $t('config.tagcreator.add') }}<i class="material-icons">call_made</i>
         </button>
       </div>
 
     </div>
 
-    <div id="tag-list">
-      <div class="tag-item tag" v-for="tag in tags" :key="tag.id" @click="clickTagToEdit(tag)"
+    <div id="tag-list" class="z-depth-2">
+      <div class="title-cont-tag"> {{ $t('config.tagcreator.taglist') }}</div>
+      <div class="tag-item tag" v-for="tag in tags" :key="tag.id" @click="clickTagToEdit($event, tag)"
           :style="{ backgroundColor: tag.bgColor, color: tag.textColor }"> 
         {{ tag.emoji + ' ' + tag.name }}
       </div>
     </div>
+    <transition name="fade">
+      <div id="edit-tag-list" class="z-depth-2" v-if="editTag.id.value.length > 0">
+        <div class="edit-tag-title title-cont-tag">{{ $t('config.tagcreator.tagedit') }} </div>
+        <div class="edit-tag-preview">
+          <div class="tag" :style="{ backgroundColor: editTag.bgColor.value, color: editTag.textColor.value }"> 
+            {{ editTag.emoji.value + ' ' + editTag.name.value }}
+          </div>
+        </div>
 
-    <div id="edit-tag-list">
+        <div class="edit-tag-name">
+          <input type="text" :value="editTag.name.value" @input="editTag.name.value = $event.target.value">
+        </div>
 
-      <div class="edit-tag-preview">
-        <div class="tag" :style="{ backgroundColor: editTag.bgColor.value, color: editTag.textColor.value }"> 
-          {{ editTag.emoji.value + ' ' + editTag.name.value }}
+        <div class="edit-tag-emoji">
+          <div class="waves-effect waves-light btn blue lighten-5" @click="pickerEvent($event.target, 'edit-tag')"> {{ editTag.emoji.value }} </div>
+        </div>
+
+        <div class="edit-tag-bg-color">
+          <input type="color" :value="editTag.bgColor.value" @input="editTag.bgColor.value = $event.target.value">
+        </div>
+
+        <div class="edit-tag-text-color">
+          <input type="color" :value="editTag.textColor.value" @input="editTag.textColor.value = $event.target.value">
+        </div>
+
+        <div class="edit-tag-remove waves-effect waves-light btn red lighten-3" @click="deleteTag">
+          <i class="material-icons"> close </i> {{ $t('config.tagcreator.remove') }}
+        </div>
+
+        <div class="edit-tag-update waves-effect waves-light btn blue lighten-5" @click="updateTag">
+          <i class="material-icons"> mode_edit </i> {{ $t('config.tagcreator.update') }}
         </div>
       </div>
-
-      <div class="edit-tag-name">
-        <input type="text" :value="editTag.name.value" @input="editTag.name.value = $event.target.value">
-      </div>
-
-      <div class="edit-tag-emoji">
-        <div class="waves-effect waves-light btn blue lighten-5" @click="pickerEvent($event.target, 'edit-tag')"> {{ editTag.emoji.value }} </div>
-      </div>
-
-      <div class="edit-tag-bg-color">
-        <input type="color" :value="editTag.bgColor.value" @input="editTag.bgColor.value = $event.target.value">
-      </div>
-
-      <div class="edit-tag-text-color">
-        <input type="color" :value="editTag.textColor.value" @input="editTag.textColor.value = $event.target.value">
-      </div>
-
-      <div class="edit-tag-remove waves-effect waves-light btn red lighten-3" @click="deleteTag">
-        <i class="material-icons"> close </i> Delete
-      </div>
-
-      <div class="edit-tag-update waves-effect waves-light btn blue lighten-5" @click="updateTag">
-        <i class="material-icons"> mode_edit </i> Update
-      </div>
-    </div>
+    </transition>
   </div>  
 </template>
 
@@ -145,12 +147,25 @@ export default ({
       ipcRenderer.send('reloadData');
     }
 
-    function clickTagToEdit(tag: Tag) {
+    function clickTagToEdit(ev: any, tag: Tag) {
+
+      const allTags = document.querySelectorAll('.tag');
+
+      if( ev.target.classList.contains('tag-selected') ) {
+        ev.target.classList.remove('tag-selected');
+        editTag.id.value = editTag.name.value = editTag.bgColor.value = editTag.textColor.value = editTag.emoji.value = '';
+        return 0;
+      } 
+
+      allTags.forEach( tag => tag.classList.remove('tag-selected'));
+      ev.target.classList.add('tag-selected');
+
       editTag.id.value = tag.id;
       editTag.name.value = tag.name;
       editTag.bgColor.value = tag.bgColor;
       editTag.textColor.value = tag.textColor;
       editTag.emoji.value = tag.emoji;
+      
     }
 
     function updateTag() {
@@ -191,11 +206,13 @@ export default ({
 
     display: grid;
     grid-template-rows: 1fr 1fr;
-    grid-template-columns: 15fr 5fr 5fr 5fr 2fr; 
+    grid-template-columns: 14fr 3fr 3fr 1fr 4fr; 
     width: 100%;
     column-gap: 20px;
     justify-items: left;
     align-items: left;
+
+    margin-bottom: 50px;
 
     .new-tag-title{
       grid-column: 1 / 6;
@@ -230,33 +247,54 @@ export default ({
 
     .add-tag {
       button {
+        display: flex;
         color: black;
+      }
+      i {
+        padding-left: 5px;
       }
     }
   }
 
   #tag-list {
     padding: 20px;
+    background-color: rgb(221, 221, 221);
+    border-radius: 5px;
+
     .tag-item{
-      transition: .3s;
       float: left;
       margin: 5px;
-
-      &:hover {
-        transition: .3s;
-        box-shadow: 0px 0px 1px 1px #000;     
-      }
     }
   }
+
+    .title-cont-tag{
+      color: black;
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
 
   #edit-tag-list {
     display: grid;
     grid-template-columns: 1fr 1fr;
     padding: 20px;
-    border-left:1px solid lightgray;
+    margin-left: 30px;
+    background-color: rgb(221, 221, 221);
+    border-radius: 5px;
+
+    input {
+      color: black;
+    }
+
+    .edit-tag-title {
+      grid-column: 1 / 3;
+     }
 
     .edit-tag-preview{
       grid-column: 1 / 3;
+      .tag {
+        border: 2px solid black;
+      }
     }
 
     .edit-tag-update, .edit-tag-remove {

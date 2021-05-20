@@ -54,6 +54,40 @@
             <input type="range" min="0" max="100" value="50" v-on:input="Player.volume">
         </div>
 
+        <div id="queue-mode">
+
+            <i class="material-icons btn-hover" @click="showQueue = !showQueue">queue_music</i>
+            <div class="switch">
+                <label>
+               
+                <input type="checkbox" @click="Player.switchQueueMode()">
+                <span class="lever"></span>
+
+                </label>
+            </div>
+        </div>
+        <transition name="fade">    
+            <div v-if="showQueue" id="container-queue" class="z-depth-5">
+                <div class="total-songs"> 
+                    <span>{{ playlist.length }}</span> 
+                    <i class="material-icons">library_music</i> 
+                    <div class="total-songs-title"> {{ $t('player.queuetitle') }} </div>
+                </div>
+                <div class="queue-songs">
+                    <div class="queue-song" draggable="true" 
+                        @dragover="Playlist.allowDrop($event)" 
+                        @drop="Playlist.drop($event, song)"
+                        @dragstart="Playlist.drag($event, song)"
+                        :key="song.id" v-for="song in playlist">
+                        <div class="queue-song-portada" :style="{ backgroundImage: getPortada(song.portada[0]) }"> </div>
+                        <div class="queue-song-title"> {{ song.title }} </div>
+                        <div class="queue-song-artist"> {{ song.artist }} </div>
+                        <i class="material-icons" @click="Playlist.removePlaylistSong([song.id])"> close </i>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
   </div>
 </template>
 
@@ -64,6 +98,8 @@
     import { Howl } from 'howler';
     import store from '@/store/store';
     import { Portada } from '@/models/Portada';
+    import Store from 'electron-store';
+    import { ipcRenderer } from 'electron';
 
     export default {
         setup(){
@@ -73,18 +109,25 @@
             const formatTime: any = inject('formatTime');
             var oldSong = '';
             var shuffle = false;
+            const database: any = new Store();
 
             // Player
             const loopActive = ref('');
             const shuffleActive = ref('');
             const nightcoreActive = ref('');
             const lowcoreActive = ref(''); 
+            const showQueue = ref(false);
             const playPauseBtn = ref('play_circle_outline');
             const portadas = store.getters.portadaList;
+            const playlist = store.getters.playlist;
+            const queueMode = store.getters.queueMode;
             const rate = ref(1);
             const volume = ref(1);
+            let nightcoreRate = 1.2;
+            let lowcoreRate = 0.9;
 
             const song = {
+                id: '',
                 howl: {} as Howl,
                 title: ref(''),
                 artist: ref(''),
@@ -99,14 +142,46 @@
             
             var songNumber = 0;
 
+            function loadCoreRates() {
+                //Get Rates
+                let config = JSON.parse(database.get('STMusicConfig'));
+
+                if(config.nightcore) {
+                    nightcoreRate = config.nightcore; 
+                }
+
+                if(config.lowcore) {
+                    lowcoreRate = config.lowcore; 
+                }
+
+                if(typeof(song.howl.rate) === 'function') {
+
+                    if(nightcoreActive.value) { 
+                        song.howl.rate( nightcoreRate );
+                        rate.value = nightcoreRate;
+                    }
+
+                    if(lowcoreActive.value) {
+                        song.howl.rate( lowcoreRate );
+                        rate.value = lowcoreRate;
+                    }
+                }
+            }
+
+            loadCoreRates();
+
+            ipcRenderer.on('reloadConfig', () => {
+                loadCoreRates();
+            })
+
             /* --- Functions Player --- */
             const Player = {
 
                 // Music Tool Bar 
                 play(songObj: any, songemitted = false) {
+                  
+                    if(oldSong && songemitted) store.actions.togglePlaying(oldSong, false);
                     
-                    if(oldSong) store.actions.togglePlaying(oldSong);
-             
                     if(songemitted && Object.entries(song.howl).length != 0) {
                         song.howl.unload(); // Borrar cancion antigua
                         song.howl = {} as Howl; 
@@ -125,35 +200,36 @@
                     
                                 window.requestAnimationFrame(() => stepFunction()); // No funciona como esperaba *REVISAR*
 
+                                song.id = songObj.id;
                                 song.title.value = songObj.title;
                                 song.artist.value = songObj.artist;
                                 song.portada.value = getPortada(songObj.portada[0]);
 
-                                store.actions.togglePlaying(songObj.id);
-                                
+                                store.actions.togglePlaying(songObj.id, true);
+                            
                             },
                             onend: function() {
+
+                                const listType = queueMode.value ? playlist.value : songList.value;
 
                                 if(loopActive.value != '') return 0;
 
                                 if(shuffle) {
-                                    const randSong = Math.round(Math.random() * songList.value.length - 1);
-                                    Player.play(songList.value[randSong], true);
+                                    const randSong = Math.round(Math.random() * listType.length - 1);
+                                    Player.play(listType[randSong], true);
                                     return 0;
                                 } 
 
-                                let index = 0;
+                                let index = newIndexSong(songObj.id, listType);
 
-                                // Busca la posicion donde se encuentra la cancion actual
-                                songList.value.forEach( (arrSong: any, arrIndex: number) => {
-                                    if(arrSong.id === songObj.id) index = arrIndex;
-                                })
-        
-                                // Si es la ultima canción vuelve a empezar por la 0
-                                index = (index >= songList.value.length - 1) ? 0 : index + 1; 
+                                //Si esta en modo playlist toca la 0
+                                if(queueMode.value) index = 0;
 
                                 // Ejecuta la siguiente o 0
-                                Player.play(songList.value[index], true);
+                                Player.play(listType[index], true);
+
+                                // Borra la cancion de la playlist
+                                if(queueMode.value) store.actions.removeToPlaylist([listType[index].id]);
                             }
                         });
                     } 
@@ -169,28 +245,44 @@
                 },
                 prevSong() {
 
+                    const listType = queueMode.value ? playlist.value : songList.value;
+
                     if(shuffle) {
-                        songNumber = Math.round(Math.random() * songList.value.length - 1);
+                        songNumber = Math.round(Math.random() * (listType.length - 1));
                     } else {
-                        songNumber = songNumber == 0 ? 0 : songNumber - 1;
+                        songNumber = newIndexSong(song.id, listType, true);
                     }
+
+                    //Si esta en modo playlist toca la 0
+                    if(queueMode.value) songNumber = 0;
                     
-                    Player.play( songList.value[songNumber], true);
+                    Player.play( listType[songNumber], true);
+
+                    // Borra la cancion de la playlist
+                    if(queueMode.value) store.actions.removeToPlaylist([listType[songNumber].id]);
                 },
                 nextSong() {
 
+                    const listType = queueMode.value ? playlist.value : songList.value;
+
                     if(shuffle) {
-                        songNumber = Math.round(Math.random() * songList.value.length - 1);
+                        songNumber = Math.round(Math.random() * (listType.length - 1));
                     } else {
-                        songNumber = (songList.value.length - 2) < songNumber ? 0 : songNumber + 1; 
+                        songNumber = newIndexSong(song.id, listType);
                     }
 
-                    Player.play( songList.value[songNumber], true);
+                    //Si esta en modo playlist toca la 0
+                    if(queueMode.value) songNumber = 0;
+
+                    if(listType.length > 0) Player.play( listType[songNumber], true);
+
+                    // Borra la cancion de la playlist
+                    if(queueMode.value) store.actions.removeToPlaylist([listType[songNumber].id]);
                 },
                 nightcore() {
                     if(Object.entries(song.howl).length != 0) {
                         var howlRate = song.howl.rate();
-                        howlRate = howlRate <= 1 ? 1.2 : 1;
+                        howlRate = howlRate <= 1 ? nightcoreRate : 1;
                         rate.value = howlRate;
                         song.howl.rate(howlRate);
                         nightcoreActive.value = howlRate <= 1 ? '' : 'stm-active';
@@ -200,7 +292,7 @@
                 lowcore() {
                     if(Object.entries(song.howl).length != 0) {
                         var howlRate = song.howl.rate();
-                        howlRate = howlRate >= 1 ? 0.9 : 1;
+                        howlRate = howlRate >= 1 ? lowcoreRate : 1;
                         rate.value = howlRate;
                         song.howl.rate(howlRate);
                         lowcoreActive.value = howlRate >= 1 ? '' : 'stm-active';
@@ -226,6 +318,9 @@
                 shuffle() {
                     shuffle = !shuffle;
                     shuffleActive.value = shuffle ? 'stm-active' : '';
+                },
+                switchQueueMode() {
+                    store.actions.setQueueMode(!queueMode.value)
                 }
             }
 
@@ -247,8 +342,6 @@
         
                 let url = '';
 
-                console.log(id);
-
                 portadas.value.map( ( portada: Portada) => {
                     if( portada.id === id) url = portada.url;
                 })
@@ -256,12 +349,48 @@
                 return `url('/img/${url}')`;
             }
 
+            function newIndexSong( oldId: string, playlist: any[], prev = false) {
+
+                let index = -1;
+
+                // Busca la posicion donde se encuentra la cancion actual
+                playlist.forEach( (arrSong: any, arrIndex: number) => {
+                    if(arrSong.id === oldId) index = arrIndex;
+                });
+
+                // Si es la ultima canción vuelve a empezar por la 0
+                index = (index >= playlist.length - 1) ? 0 : prev ? index - 1 : index + 1; 
+
+                if(index === -1) index = 0;
+
+                return index;
+            }
+
+            // Playlist functions
+            const Playlist = {
+                allowDrop(ev) {
+                    ev.preventDefault();
+                },
+                drag(ev, dragSong) {
+                    ev.dataTransfer.setData('dragSong', JSON.stringify(dragSong));
+                },
+                drop(ev, currentSong) {
+                    ev.preventDefault();
+                    const dragSong = JSON.parse(ev.dataTransfer.getData('dragSong'));
+                    store.actions.reorderPlaylist(currentSong, dragSong);
+                },
+
+                removePlaylistSong(ids: string[]) {
+                    store.actions.removeToPlaylist(ids);
+                }
+            }
+
 
             return {
-                Player, song, stop, 
+                Player, song, stop, Playlist,
                 playPauseBtn, shuffleActive,
-                loopActive, nightcoreActive,
-                lowcoreActive, getPortada
+                loopActive, nightcoreActive, showQueue,
+                lowcoreActive, getPortada, playlist,
             };
         },
     };
@@ -276,14 +405,14 @@
         position: absolute;
         width: 100%;
         height: 100%;
-        background-color: $main-color;
+        background-color: #ececec;
 
         #progress-bar-sound{
             transition: 0.1s;
             position: absolute;
             width: 0%;
             height: 100%;
-            background: $progress-bar-sound;
+            background: rgba(0, 0, 0, 0.1);
         }
     }
 
@@ -439,6 +568,90 @@
         #song-img{
             border: 1px solid green;
             width: 100%;
+        }
+    }
+
+    #queue-mode {
+        display: flex;
+        position: absolute;
+        width: 100px;
+        height: 30px;
+        right: 20px;
+        top: 10px;
+
+        i {
+            width: 30px;
+            height: 30px;
+            padding: 3px;
+        }
+
+        .switch{
+            margin-top: 2px;
+        }
+    }
+
+    #container-queue {
+        position: absolute;
+        top: -70vh;
+        right: 1%;
+        height: calc(80vh - 100px);
+        width: 30%;
+        border: 1px solid lightgray;
+        border-radius: 5px;
+        background-color: white;
+        padding: 20px;
+        padding-top: 50px;
+        display: grid;
+        grid-template-rows: 10px 1fr;
+
+        .total-songs {
+            margin-top: -35px;
+            color: gray;
+            text-align: left;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            background-color: white;
+            border-bottom: 1px solid lightgray;
+
+            i {
+                font-size: 25px;
+            }
+
+            .total-songs-title {
+                text-align: center;
+                font-size: 20px;
+                font-weight: bold;
+                width: 100%;
+            }
+        }
+
+        .queue-songs {
+            overflow-y: scroll;
+            cursor: grab;
+
+            .queue-song {
+                display: grid;
+                grid-template-columns: 37px 1fr 1fr 30px;
+                height: 50px;
+                align-items: center;
+                border-bottom: 1px solid;
+            }
+
+            .queue-song-title, .queue-song-artist {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis
+            }
+
+            .queue-song-portada { 
+                width: 36px;
+                height: 36px;
+                background-size: 100%;
+                border-radius: 100%;
+                margin: 2px;
+              
+            }
         }
     }
 </style>

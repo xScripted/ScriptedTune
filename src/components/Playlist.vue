@@ -4,27 +4,27 @@
 
         <div id="order-by">
             <div id="songs-length"> {{ songList.length }} <i class="material-icons">library_music</i></div>
-            <div id="order-by-title"  @click="orderSongs('title')"> Título <i class="material-icons"> {{ arrow.title.value }} </i> </div>
-            <div id="order-by-artist" @click="orderSongs('artist')"> Artista <i class="material-icons"> {{ arrow.artist.value }} </i> </div>
+            <div id="order-by-title"  @click="orderSongs('title')"> {{ $t('playlist.title') }} <i class="material-icons"> {{ arrow.title.value }} </i> </div>
+            <div id="order-by-artist" @click="orderSongs('artist')"> {{ $t('playlist.artist') }} <i class="material-icons"> {{ arrow.artist.value }} </i> </div>
             <div></div>
             <div></div>
-            <div id="order-by-date" @click="orderSongs('date')"> Fecha <i class="material-icons"> {{ arrow.date.value }} </i> </div>
+            <div id="order-by-date" @click="orderSongs('date')"> {{ $t('playlist.date') }} <i class="material-icons"> {{ arrow.date.value }} </i> </div>
         </div>
 
         <div id="song-list">
-            <div class="song-row" :key="song.id" v-for="(song, index) in songList" @click="playSong(song, index)">
-                <div class="playing"> <i class="material-icons" v-if="song.playing">volume_up</i> </div>
-                <div class="add-queue"> <i class="material-icons">add</i> </div>
-                <div class="title"> {{ song.title }} </div>
-                <div class="artist"> {{ song.artist }} </div>
-                <div class="portada"> <div class="portada" :style="{ backgroundImage: getPortada( song.portada[0] )}"> </div>  </div>
-                <div class="tags">
+            <div class="song-row" :key="song.id" v-for="(song, index) in songList" >
+                <div class="playing" @click="playSong(song, index)"> <i class="material-icons" v-if="song.playing">volume_up</i> </div>
+                <div class="add-queue" @click="addToPlaylist(song)"> <i class="material-icons">add</i> </div>
+                <div class="title" @click="playSong(song, index)"> {{ song.title }} </div>
+                <div class="artist" @click="playSong(song, index)"> {{ song.artist }} </div>
+                <div class="portada" @click="playSong(song, index)"> <div class="portada" :style="{ backgroundImage: getPortada( song.portada[0] )}"> </div>  </div>
+                <div class="tags" @click="playSong(song, index)">
                     <div class="tag" :key="idTag" v-for="idTag of song.tags"
                         :style="{ backgroundColor: tagById(idTag).bgColor, color: tagById(idTag).textColor }"> 
                         {{ tagById(idTag).emoji + ' ' + tagById(idTag).name }} 
                     </div>    
                 </div>
-                <div class="creation-date"> {{ prettyDate(song.date) }}</div>
+                <div class="creation-date" @click="playSong(song, index)"> {{ prettyDate(song.date) }}</div>
             </div>
         </div>
 
@@ -70,7 +70,7 @@
 
             function orderSongs(type: keyof Song) {
                 var direction = toggleOrder[type] = !toggleOrder[type]; 
-                store.actions.orderSongs( type );
+                store.actions.orderSongs( type, direction );
 
                 // Arrow
                 if( type == 'title') {
@@ -93,11 +93,15 @@
             }
 
             function tagById(id: string) {
-                return store.actions.getTagById(id);
+                return store.getters.getTagById(id);
+            }
+
+            function addToPlaylist(song: Song) {
+                store.actions.addToPlaylist(song);
             }
 
             return {
-                 playSong, orderSongs, arrow, checked, prettyDate, songList, tagById, getPortada
+                 playSong, orderSongs, arrow, checked, prettyDate, songList, tagById, getPortada, addToPlaylist
             }
         }
     };
@@ -148,14 +152,9 @@
 
 
     #song-list{
-        height: 100%;
-        padding-bottom: 100px;
+        height: 95%;
+        padding-bottom: 50px;
         overflow: scroll;
-
-                /* Hide scrollbar for Chrome, Safari and Opera */
-        &::-webkit-scrollbar {
-            display: none;
-        }
         
         .song-row{
             cursor: pointer;

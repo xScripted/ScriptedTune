@@ -43,6 +43,10 @@ export default ({
 
 <style scoped lang="scss">
 
+  #ConfigStudio {
+    overflow: hidden;
+  }
+
   .nav-title {
     font-size: 20px;
     height: 50px;

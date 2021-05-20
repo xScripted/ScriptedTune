@@ -4,19 +4,19 @@
         <ul>
             <li class="valign-wrapper" :class="{ activeMenu: isActive('Edit Playlist') }" @click="tagCreator('Edit Playlist')">
                 <i class="material-icons"> chevron_right </i> 
-                Editar Playlist
+                {{ $t('config.menu.playlist') }}
             </li>
             <li class="valign-wrapper" :class="{ activeMenu: isActive('Tag Creator') }" @click="tagCreator('Tag Creator')">
                 <i class="material-icons"> chevron_right </i>  
-                Creador de Tags 
+                {{ $t('config.menu.tags') }}
             </li>
             <li class="valign-wrapper" :class="{ activeMenu: isActive('Cover Images') }" @click="tagCreator('Cover Images')">
                 <i class="material-icons"> chevron_right </i>  
-                Portadas
+                {{ $t('config.menu.portadas') }}
             </li>
             <li class="valign-wrapper" :class="{ activeMenu: isActive('General') }" @click="tagCreator('General')">
                 <i class="material-icons"> chevron_right </i>  
-                General 
+                {{ $t('config.menu.general') }}
             </li>
         </ul>
     </div>

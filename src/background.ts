@@ -5,11 +5,8 @@ import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer'
 const isDevelopment = process.env.NODE_ENV !== 'production'
 
-
 const Store = require('electron-store');
 const store = new Store();
-
-require('update-electron-app')()
 
 // Electron Store songs, tags, etc.
 
@@ -17,8 +14,16 @@ ipcMain.on('setData', (type, data) => store.set( type, data ));
 ipcMain.on('getData', (type ) => {
   const data = store.get(type);
   mainWin.webContents.send('newData', data);
-  mainWin.webContents.send('newData', data);
 });
+
+ipcMain.on('reloadConfig', () => {
+  mainWin.webContents.send('reloadConfig');
+})
+
+ipcMain.on('darkMode', () => {
+  mainWin.webContents.send('darkMode');
+  configWin.webContents.send('darkMode');
+})
 
 
 // Scheme must be registered before the app is ready
@@ -36,6 +41,7 @@ async function createWindow() {
     height: 900,
     minWidth: 500,
     minHeight: 300,
+    icon: 'src/assets/img/nightcore.ico', //checkear
     webPreferences: {
       contextIsolation: false,
       nodeIntegrationInWorker: true,
@@ -78,6 +84,7 @@ ipcMain.on('configurationIpc', (event, arg) => {
     height: 800,
     minWidth: 500,
     minHeight: 300,
+    icon: 'src/assets/img/nightcore.ico', //checkear
     parent: mainWin,
     webPreferences: {
       contextIsolation: false,
@@ -91,7 +98,7 @@ ipcMain.on('configurationIpc', (event, arg) => {
     }
   })
 
-  if(process.env.NODE_ENV != 'development') mainWin.setMenuBarVisibility(false);
+  if(process.env.NODE_ENV != 'development') configWin.setMenuBarVisibility(false);
 
   const modalPath = process.env.NODE_ENV === 'development'
     ? `http://localhost:8080/#/configuration`

@@ -4,7 +4,7 @@
         <Searcher></Searcher>
 
         <div id="tag-list">
-            <div class="taglist"> Tags </div>
+            <div class="taglist" @click="selectAll()"> Tags </div>
             <div class="tag-item tag" v-for="tag in tags" :key="tag.id" @click="activeTagFilter($event.target, tag.id)"
                 :style="{ backgroundColor: tag.bgColor, color: tag.textColor }"> 
                 {{ tag.emoji + ' ' + tag.name }}
@@ -23,11 +23,11 @@
         <div class="shorcut-buttons">
 
             <div id="add-tag" class="shorcut-btn valign-wrapper" @click="openTagConfig"> 
-                <i class="material-icons">add</i> Crear Tag
+                <i class="material-icons">add</i> {{ $t('settings.newTag') }} 
             </div>
 
             <div id="add-music" class="shorcut-btn valign-wrapper" @click="addMusic"> 
-                <i class="material-icons">add</i> Añadir Canciones 
+                <i class="material-icons">add</i> {{ $t('settings.newSong') }}
             </div>
 
         </div>
@@ -60,6 +60,7 @@
             const andOrCheck = ref(true);
             const tags = store.getters.tagList;
             var indexStudio = 0;
+            var toggleAllTags = true;
 
             function addMusic() {
 
@@ -144,8 +145,22 @@
                 store.actions.filterSongs();
             }
 
+            function selectAll() {
+                const domTags = document.querySelectorAll('.tag-item');
+
+                if(toggleAllTags) {
+                    tags.value.map( (tag) => store.actions.tagListFilter('add', tag.id ));
+                    domTags.forEach( (domTag) => domTag.classList.add('tag-selected'));
+                } else {
+                    tags.value.map( (tag) => store.actions.tagListFilter('remove', tag.id ));
+                    domTags.forEach( (domTag) => domTag.classList.remove('tag-selected'));
+                }
+
+                toggleAllTags = !toggleAllTags;
+            }
+
             return {
-                addMusic, searcherText, searcherType, toggleConfiguration, 
+                addMusic, searcherText, searcherType, toggleConfiguration, selectAll,
                 active, newTagName, newTagColor, activeTagFilter, switchAndOr,
                 filterTags, selectStudio, switchStudio,tags, openTagConfig, andOrCheck
             }
@@ -175,6 +190,7 @@
             .taglist {
                 border-bottom: 1px solid lightgray;
                 text-align: left;
+                cursor: pointer;
                 
                 margin-bottom: 20px;
             }
@@ -183,6 +199,7 @@
                 transition: .3s;
                 float: left;
                 margin: 5px;
+                display: flex;
 
             }
         }

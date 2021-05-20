@@ -35,7 +35,7 @@ export default {
     })
 
     function queryLocalStorage() {
-      console.log('RELOAD DATA!');
+      
       const storedSongs = database.get('STMusic');
       const storedTags = database.get('STMusicTags');
       const storedPortadas = database.get('STMusicPortadas');

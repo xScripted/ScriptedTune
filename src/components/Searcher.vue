@@ -1,7 +1,7 @@
 <template>
     <div class="searcher">
         <div class="input-field col s6">
-          <input placeholder="Buscador" @input="searcher($event.target.value)" type="text" class="validate">
+          <input :placeholder="$t('searcher')" @input="searcher($event.target.value)" type="text" class="validate">
         </div>
     </div>
 </template>

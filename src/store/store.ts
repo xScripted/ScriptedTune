@@ -1,4 +1,4 @@
-import { reactive, computed, inject } from 'vue';
+import { reactive, computed } from 'vue';
 
 import { Song } from '../models/Song';
 import { Tag } from '../models/Tag';
@@ -16,7 +16,9 @@ const state = reactive({
     portadaList: [] as Portada[],
     searcherText: '',
     titleStudio: 'Edit Playlist',
-    showHelp: false
+    showHelp: false,
+    playlist: [] as Song[],
+    queueMode: false,
 });
 
 const getters = {
@@ -26,78 +28,42 @@ const getters = {
     portadaList: computed(() => state.portadaList),
     searcherText: computed(() => state.searcherText),
     titleStudio: computed(() => state.titleStudio),
+    playlist: computed(() => state.playlist),
+    queueMode: computed(() => state.queueMode),
+    getTagById: (id: string) => state.tagList.find( (tag: Tag) => tag.id === id),
 };
 
-interface Type {
-    title: string,
-    artist: string,
-    date: string
-}
-
 const actions = {
-    setSongList: ( data: Song[] ) => {
-        state.songList = state.songListFilter = data;
-        database.set('STMusic', JSON.stringify(state.songList));
-    },
-    setTagList: ( data: Tag[], concat = false ) => {
-        state.tagList = concat ? state.tagList.concat(data) : data;
-        database.set('STMusicTags', JSON.stringify(state.tagList));
-    },
-    setPortadaList: ( data: Portada[], concat = false ) => {
-        state.portadaList = data;
-        database.set('STMusicPortadas', JSON.stringify(state.portadaList));
-    },
+
+    //SETTERS
     setTagAndOr: ( isAndOr: boolean ) => state.tagAndOr = isAndOr,
     setSearcherText: ( text: string ) => state.searcherText = text,
     setTitleStudio: ( title: string ) => state.titleStudio = title, 
-    updateTag: (tag: any) => {
-
-        let index = -1;
-
-        state.tagList.forEach( ( el, i ) => el.id == tag.id.value ? index = i : index );
-
-        state.tagList[index].name = tag.name.value;
-        state.tagList[index].bgColor = tag.bgColor.value;
-        state.tagList[index].textColor = tag.textColor.value;
-        state.tagList[index].emoji = tag.emoji.value;
-
+    setQueueMode: ( isQueueMode: boolean) => state.queueMode = isQueueMode,
+    setSongList( data: Song[] ) {
+        state.songList = state.songListFilter = data;
+        database.set('STMusic', JSON.stringify(state.songList));
+    },
+    setTagList( data: Tag[], concat = false ) {
+        state.tagList = concat ? state.tagList.concat(data) : data;
         database.set('STMusicTags', JSON.stringify(state.tagList));
     },
-    showcaseToSongs: ( type: string, newInfo: string[], addRemove: string, idList: string[] ) => {
-
-        if(type === 'tags' || type === 'portada') {
-
-            state.songList.map( (song: Song) => {
-                if(idList.includes(song.id)) {
-
-                    if(addRemove == 'add') {
-                        
-                        newInfo.map( ( idInfo: string ) => {
-                            console.log(song[type], idInfo, song[type].includes(idInfo));
-                            if(!song[type].includes(idInfo) && type === 'tags') song[type].push(idInfo);
-                            if(!song[type].includes(idInfo) && type === 'portada') song[type][0] = idInfo;
-                        })
-                    }
-                        
-                    if(addRemove == 'remove') {
-                        console.log(song[type], newInfo);
-                        newInfo.map( ( idInfo: string ) => {
-                       
-                            if(song[type].includes(idInfo)) {
-                                const index = song[type].indexOf(idInfo);
-                                song[type].splice( index, 1);
-                            }
-                        })
-                    }
-                }
-            })
-                
-        }
-  
-        database.set('STMusic', JSON.stringify(state.songList));  
+    setPortadaList( data: Portada[], concat = false ) {
+        state.portadaList = data;
+        database.set('STMusicPortadas', JSON.stringify(state.portadaList));
     },
-    getTagById: (id: string) => state.tagList.find( (tag: Tag) => tag.id === id),
-    removeSongs: ( ids: string[] ) => {
+    addPortada(portada: Portada) {
+        state.portadaList.push(portada);
+        database.set('STMusicPortadas', JSON.stringify(state.portadaList) );
+    },
+    addToPlaylist( song: Song ) {
+
+        const exists = state.playlist.find( (plsong: Song) => plsong.id === song.id);
+        if(!exists) state.playlist.push(song);
+    },
+
+    //REMOVES
+    removeSongs( ids: string[] ) {
   
         // Bucle invertido para que splice no afecte al loop
         for(let i = (state.songList.length - 1); i >= 0; i--) {
@@ -135,10 +101,71 @@ const actions = {
         database.set('STMusic', JSON.stringify(state.songList));
         database.set('STMusicTags', JSON.stringify(state.tagList));
     },
-    activeTagFilter: () => {
-        //state.songListFilter = state.songList.filter() 
+    removeToPlaylist( ids: string[] ) {
+        for(let i = (state.playlist.length - 1); i >= 0; i--) {
+            const exists = ids.find( (id: string) => state.playlist[i].id === id);
+            if(exists) state.playlist.splice( i, 1 );
+        }
     },
-    tagListFilter: (addRemove: string, idTag: string) => {
+
+    //UPDATE
+    updateTag(tag: any) {
+
+        let index = -1;
+
+        state.tagList.forEach( ( el, i ) => el.id == tag.id.value ? index = i : index );
+
+        state.tagList[index].name = tag.name.value;
+        state.tagList[index].bgColor = tag.bgColor.value;
+        state.tagList[index].textColor = tag.textColor.value;
+        state.tagList[index].emoji = tag.emoji.value;
+
+        database.set('STMusicTags', JSON.stringify(state.tagList));
+    },
+    updateSongInfo( updatedSong: Song) {
+
+        state.songList.map( (song: Song, index) => {
+            if(song.id === updatedSong.id) state.songList[index] = updatedSong;
+        })
+
+        database.set('STMusic', JSON.stringify(state.songList));  
+    },
+
+    //GENERAL
+    showcaseToSongs: ( type: string, newInfo: string[], addRemove: string, idList: string[] ) => {
+        if(type === 'tags' || type === 'portada') {
+
+            state.songList.map( (song: Song) => {
+                if(idList.includes(song.id)) {
+
+                    if(addRemove == 'add') {
+                        
+                        newInfo.map( ( idInfo: string ) => {
+                        
+                            if(!song[type].includes(idInfo) && type === 'tags') song[type].push(idInfo);
+                            if(!song[type].includes(idInfo) && type === 'portada') song[type][0] = idInfo;
+                        })
+                    }
+                        
+                    if(addRemove == 'remove') {
+                        
+                        newInfo.map( ( idInfo: string ) => {
+                            if(song[type].includes(idInfo)) {
+                                const index = song[type].indexOf(idInfo);
+                                song[type].splice( index, 1);
+                            }
+                        })
+
+                    }
+                }
+            })
+                
+        }
+  
+        database.set('STMusic', JSON.stringify(state.songList));  
+    },
+    tagListFilter(addRemove: string, idTag: string) {
+        
         if( addRemove == 'add' && !state.tagListFilter.includes(idTag)) {
             state.tagListFilter.push(idTag);
         }
@@ -152,7 +179,7 @@ const actions = {
 
         if(state.tagListFilter.length === 0) state.songListFilter = state.songList;
     },
-    filterSongs: () => {
+    filterSongs() {
 
         state.songListFilter = state.songList.filter( (song: any) => {
             const hasTitle = song.title.toLowerCase().includes(state.searcherText.toLowerCase());
@@ -172,21 +199,31 @@ const actions = {
         });
 
     },
-    togglePlaying: (id: string) => {
-        state.songList.forEach( (song: any, index: number) => {
-          if(song.id === id) song.playing = !song.playing;
+    togglePlaying(id: string, playing: boolean) {
+        state.songList.forEach( (song: any) => {
+          if(song.id === id) song.playing = playing;
         })
     },
-    addPortada: (portada: Portada) => {
-        state.portadaList.push(portada);
-        database.set('STMusicPortadas', JSON.stringify(state.portadaList) );
+    orderSongs( type: keyof Song, direction: boolean ) {
+        
+        const dir1 = direction ? 1 : -1;
+        const dir2 = direction ? -1 : 1;
+        
+        state.songListFilter.sort( (song: Song, song2: Song) => song[type] > song2[type] ? dir1 : dir2 );
     },
-    orderSongs( type: keyof Song ) {
-        state.songListFilter.sort( (song: Song) => song[type] > song[type] ? 1 : -1 );
+    reorderPlaylist(currentSong: Song, dragSong: Song) {
+        actions.removeToPlaylist([dragSong.id]);
+
+        let index = -1;
+
+        state.playlist.map( (song, i) => {
+            if( song.id === currentSong.id) index = i;
+        })
+
+        if(index >= 0) state.playlist.splice(index, 0, dragSong);
     }
-};
+}
 
 const store = { getters, actions };
 
 export default store;
-

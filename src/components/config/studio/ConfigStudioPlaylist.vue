@@ -1,7 +1,7 @@
 <template>
   <div id="EditPlaylist">
     <div id="visualizer">
-      <button class="toggle-type waves-effect waves-light btn blue lighten-5" @click="toggleTypeFunc"> {{ toggleType }} </button>
+      <button class="toggle-type waves-effect waves-light btn blue lighten-5" @click="toggleTypeFunc"> {{ $t('config.' + toggleType )  }} </button>
 
       <div class="showcase">
 
@@ -22,8 +22,8 @@
       </div>
 
       <div class="showcase-actions">
-        <button class="showcase-add waves-effect waves-light btn blue lighten-5" @click="addShowcaseToSongs"> Añadir </button>
-        <button class="showcase-remove waves-effect waves-light btn blue lighten-5" @click="removeShowcaseToSongs"> Borrar </button>
+        <button class="showcase-add btn blue lighten-5" @click="showcaseToSongs('add')"> {{ $t('config.playlist.add') }} </button>
+        <button class="showcase-remove btn blue lighten-5" @click="showcaseToSongs('remove')"> {{ $t('config.playlist.remove') }} </button>
       </div>
 
     </div>
@@ -35,8 +35,8 @@
         <span></span>
       </label>
 
-      <div class="by-title" >Title</div>
-      <div class="by-artist">Artist</div>
+      <div class="by-title"> {{ $t('playlist.title') }} </div>
+      <div class="by-artist"> {{ $t('playlist.artist') }} </div>
       <div class="by-portada"></div>
       <div class="by-date">Tags</div>
       <div class="song-remove-checked" @click="removeSongs">
@@ -53,10 +53,13 @@
           <span></span>
         </label>
 
-        <input class="song-title" type="text" :value="song.title">
-        <input class="song-artist" type="text" :value="song.artist">
+        <input class="song-title" type="text" :value="song.title" @input="updateSongInfo($event, song, 'title')">
+        <input class="song-artist" type="text" :value="song.artist" @input="updateSongInfo($event, song, 'artist')">
+
+        <div class="song-url" @click="editSongUrl(song)"> <i class="material-icons"> insert_link </i> </div>
 
         <div class="song-album" :style="{ backgroundImage: getPortada(song.portada[0]) }"> </div>
+
         <div class="song-tags">
           <div class="tag" :key="idTag" v-for="idTag of song.tags"
                 :style="{ backgroundColor: tagById(idTag).bgColor, color: tagById(idTag).textColor }"> 
@@ -64,10 +67,17 @@
             <i class="song-tags-remove material-icons" @click="removeSingleTagFromSong(song.id, idTag)"> close </i>
           </div>
         </div>
+
         <div class="song-remove" @click="removeSong(song.id)"> <i class="material-icons"> close </i> </div>
 
       </div>
 
+    </div>
+
+    <div id="url-modal" v-if="toggleUrlModal" class="z-depth-5">
+      <div class="modal-title"> {{ modalSong.title + ' - ' + modalSong.artist }} </div>
+      <input type="text" :value="modalSong.url" @input="updateSongInfo($event, modalSong, 'url')">
+      <i class="material-icons" @click="() => toggleUrlModal = false">close</i>
     </div>
   </div>
 </template>
@@ -79,6 +89,7 @@ import store from '@/store/store';
 import Searcher from '@/components/Searcher.vue';
 import { ipcRenderer } from 'electron';
 import { Portada } from '@/models/Portada';
+import { Song } from '@/models/Song';
 
 export default ({
   components: {
@@ -87,6 +98,8 @@ export default ({
   setup() {
 
     const toggleType = ref('tags');
+    const toggleUrlModal = ref(false);
+    const modalSong = ref('');
 
     const songList = store.getters.songListFilter;
     const tagList = store.getters.tagList;
@@ -150,19 +163,24 @@ export default ({
 
     }
 
-    function addShowcaseToSongs() {
+    function showcaseToSongs(addRemove: string) {
       const data = toggleType.value === 'tags' ? showcaseTags : [showcasePortada];
-      store.actions.showcaseToSongs(toggleType.value, data, 'add', checkedIds);
+      store.actions.showcaseToSongs(toggleType.value, data, addRemove, checkedIds);
       ipcRenderer.send('reloadData');
     }
 
-    function removeShowcaseToSongs() {
-      store.actions.showcaseToSongs(toggleType.value, showcaseTags, 'remove', checkedIds); 
+    function updateSongInfo( event: any, song: Song, type: string){
+
+      if(type === 'title' || type === 'artist' || type === 'url') {
+        song[type] = event.target.value;
+      }
+
+      store.actions.updateSongInfo(song);
       ipcRenderer.send('reloadData');
     }
 
     function tagById(id: string) {
-      return store.actions.getTagById(id);
+      return store.getters.getTagById(id);
     }
 
     function removeSong(id: string) {
@@ -222,10 +240,15 @@ export default ({
         return `url('/img/${url}')`;
     }
 
+    function editSongUrl(song: any) {
+      toggleUrlModal.value = true;
+      modalSong.value = song;
+    }
+
     return {
       songList, toggleType, toggleTypeFunc, tagList, toggleCheckbox, removeSingleTagFromSong, toggleAllCheckbox,
-      toggleShowcaseTags, addShowcaseToSongs, removeShowcaseToSongs, tagById, removeSongs, removeSong, portadaList,
-      toggleShowcasePortada, getPortada
+      toggleShowcaseTags, showcaseToSongs, tagById, removeSongs, removeSong, portadaList,
+      toggleShowcasePortada, getPortada, toggleUrlModal, editSongUrl, modalSong, updateSongInfo
     }
   }
 });
@@ -256,7 +279,6 @@ export default ({
         height: 100%;
         overflow-y: scroll;
         &::-webkit-scrollbar { display: none;  }
-        box-shadow: 0 2px 2px 0 rgba(0,0,0,0.14), 0 3px 1px -2px rgba(0,0,0,0.12), 0 1px 5px 0 rgba(0,0,0,0.2), inset 0px 0px 20px 0px lightgray;
 
         .showcase-tags {
           padding: 0px 10px;
@@ -314,7 +336,6 @@ export default ({
       grid-template-columns: 60px 1fr 1fr 50px 3fr 50px;
       align-items: center;
       margin-top: 5px;
-      border-bottom: 1px solid lightgray;
 
       .song-remove-checked {
         cursor: pointer;
@@ -329,12 +350,15 @@ export default ({
       height: 100%;
       padding-bottom: 100px;
       overflow-y: scroll;
-      &::-webkit-scrollbar { display: none;  }
+      border-radius: 10px;
+      border-top: 1px solid lightgray;
+      box-shadow: inset 0px -5px 10px 0px rgba(0, 0, 0, 0.2);
+   
       .song-row {
         display: grid;
         height: 40px;
         margin: 5px 0px;
-        grid-template-columns: 60px 1fr 1fr 50px 3fr 50px;
+        grid-template-columns: 60px 1fr 1fr 50px 50px 2fr 50px;
         align-items: center;
 
         border-bottom: 1px solid lightgray;
@@ -347,6 +371,11 @@ export default ({
           border-bottom: 2px solid transparent;
           margin-top: -7px;
           width: 95%;
+        }
+
+        .song-url {
+          margin-top: -10px;
+          cursor: pointer;
         }
 
         .song-album {
@@ -396,6 +425,33 @@ export default ({
 
           }
         }
+      }
+    }
+
+    #url-modal {
+      position: absolute;
+      border: 1px solid lightgray;
+      width: 60%;
+      height: 100px;
+      padding: 20px;
+      top: 50vh;
+      left: 0;
+      right: 0;
+      margin: auto;
+      z-index: 10;
+      border-radius: 5px;
+      background-color: white;
+
+      .modal-title {
+        font-weight: bold;
+        font-size: 20px;
+      }
+
+      i {
+        position: absolute;
+        cursor: pointer;
+        top: 5px;
+        right: 10px;
       }
     }
   }

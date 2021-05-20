@@ -1,11 +1,176 @@
-/* -- Global Vars -- */
-
-$main-color: #ececec;
-$sencondary-color: rgba(0, 0, 0, 0.2);
-$helper-color: rgba(186, 255, 121, 0.904);
-$progress-bar-sound: rgba(0, 0, 0, 0.1);
-
 @import url('https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500&display=swap');
+
+
+body * {
+    user-select: none;
+}
+
+.stm-active{
+    background-color:rgba(0, 0, 0, 0.2);
+    border-radius: 100%;
+
+    &:hover{
+        background-color:rgba(0, 0, 0, 0.2) !important;  
+    }
+}
+
+.emoji-picker__wrapper{
+    z-index: 1;
+}
+
+.btn-hover {
+    transition: .3s;
+    border-radius: 100%;
+
+    &:hover{
+        transition: .3s;
+        background: rgb(218, 218, 218);
+        border-radius: 100%;
+    }
+}
+
+.tag {
+    transition: .2s;
+    cursor: pointer;
+    font-size: 15px;
+    border: 2px solid transparent;
+    border-radius: 5px;
+    padding: 2px 7px;
+    user-select: none;
+    height: 30px;
+    overflow: hidden;
+    white-space: nowrap;
+    font-weight: bold;
+
+    &:hover{
+        transition: .2s;
+        transform: scale(0.8, 1.2);
+    }
+
+    &.tag-selected {
+        transition: .2s;
+        transform: skew(0deg, -7deg);
+        border: 2px solid black;
+    }
+}
+
+// DARK MODE
+
+$dark-main: #212121;
+$dark-dark: #111111;
+$dark-text: #cccccc;
+
+.dark-mode {
+
+    &#app, &#Configuration {
+        background-color: $dark-main;
+        color: $dark-text;
+    }
+
+    &#progress-bar-sound-parent {
+        background-color: $dark-dark;
+        color: $dark-text;  
+    }
+
+    &#progress-bar-sound {
+        background-color: $dark-text !important;
+        opacity: 0.2;
+        color: $dark-text;  
+    }
+    
+    &#current-durantion, #total-durantion {
+        color: $dark-text !important;
+    }
+
+    &.btn-hover {
+
+        &:hover {
+            background-color: $dark-text !important;
+            color: $dark-main;
+        }
+
+    }
+
+    #container-queue{
+        background-color: $dark-dark !important;
+        border: 0px solid  $dark-main;
+    }
+
+    .total-songs{
+        background-color: $dark-dark !important;
+        color: $dark-text !important;
+    }
+
+    &#music-tool-bar {
+        .stm-active {
+            color: $dark-main;
+            background-color: $dark-text !important;
+        }
+    }
+
+    &.searcher input{
+        color: $dark-text;
+    }
+
+    &.nav-title{
+        background-color: $dark-dark;
+        color: $dark-text;
+    }
+
+    &#playlist-editor{
+        input {
+            color: $dark-text; 
+        }
+    }
+
+    &#ConfigStudio {
+        button{
+            background-color: $dark-dark !important;
+            color: $dark-text !important;
+        }
+
+        input {
+            color: $dark-text;
+        }
+
+        .showcase { 
+            box-shadow: 0 0 0 0 black !important;
+        }
+    }
+}
+
+// VUE TRANSITIONS
+.fade-enter-active, .fade-leave-active {
+    transition: opacity .2s ease;
+}
+  
+.fade-enter-from, .fade-leave-to {
+    opacity: 0;
+}
+
+
+//SCROLLBAR
+/* width */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+    box-shadow: inset 0 0 2px rgb(197, 197, 197); 
+    border-radius: 10px;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+    background: rgb(70, 70, 70); 
+    border-radius: 10px;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+    background: rgb(0, 0, 0); 
+}
 
 // Media Queries
 @mixin tablet {
@@ -24,57 +189,4 @@ $progress-bar-sound: rgba(0, 0, 0, 0.1);
     @media only screen and (min-width: 1200px) {
       @content;
     }
-}
-
-body * {
-    user-select: none;
-}
-
-.stm-active{
-    background-color: $sencondary-color;
-    border-radius: 100%;
-
-    &:hover{
-        background-color: $sencondary-color !important;  
-    }
-}
-
-.btn-hover {
-    transition: .3s;
-
-    &:hover{
-        transition: .3s;
-        background: rgb(218, 218, 218);
-        border-radius: 100%;
-    }
-}
-
-.tag {
-    transition: .2s;
-    cursor: pointer;
-    font-size: 15px;
-    border: 2px solid transparent;
-    box-shadow: 0px 0px 3px 1px lightgray;
-    border-radius: 5px;
-    padding: 2px 7px;
-    user-select: none;
-    height: 30px;
-    overflow: hidden;
-    white-space: nowrap;
-    font-weight: bold;
-
-    &:hover{
-        transition: .2s;
-        box-shadow: 0px 0px 5px 1px rgb(66, 66, 66);
-    }
-
-    &.tag-selected {
-        transition: .2s;
-        border: 2px dashed white;
-        box-shadow: 0px 0px 0px 2px black;
-    }
-}
-
-.emoji-picker__wrapper{
-    z-index: 1;
 }
